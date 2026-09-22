@@ -29,6 +29,9 @@
 
 ## Chunking Strategy
 
+Starter baseline (chunker.py::fallback_split, 800-char windows):
+88 documents -> 88 chunks, 317 chars average, shortest 178, longest 549.
+
 **Chunk size:**
 **Overlap:**
 
@@ -80,8 +83,8 @@
 
 ## Sample Answer
 
-<!-- One complete question and answer, pasted as text, with the source line
-     visible. Milestone 4. -->
+Covered question "is the housing lottery random?" -> best distance 0.254.
+Starter cutoff: 0.6.
 
 **Question:**
 
