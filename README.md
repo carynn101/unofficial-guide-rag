@@ -32,6 +32,9 @@
 Starter baseline (chunker.py::fallback_split, 800-char windows):
 88 documents -> 88 chunks, 317 chars average, shortest 178, longest 549.
 
+My chunker (chunker.py::split_documents, paragraph splits, min 150 chars, no overlap):
+88 documents -> 105 chunks, 265 chars average, shortest 152, longest 422.
+
 **Chunk size:**
 **Overlap:**
 
