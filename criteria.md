@@ -52,7 +52,9 @@ My one covered question came back at 0.254 against a 0.6 cutoff, so I expect a c
 
 ## 4. Something about your chunks
 
-For at least 4 of my 5 test questions, the answer is contained entirely within a single retrieved chunk rather than split across two.
+For at least 4 of my 5 test questions, a single retrieved chunk contains the
+full `expects` phrase from `questions.py`, rather than the answer being split
+across two chunks.
 
 **Why this target:**
 
