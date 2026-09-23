@@ -53,9 +53,8 @@ minimum before a chunk is emitted and any leftover text merged back into the
 previous chunk. The minimum is what stops orphans — a bare title line is not
 something anyone can answer a question from, and the brief warned that a naive
 split on advice_threads produces a 2-character chunk. The result was 105 chunks:
-the 17 extra chunks came from posts that had a separable second thought, which is the right
-outcome for single-topic posts. Shortest chunk is 152 characters and longest 422,
-so nothing came out as a fragment.
+the 17 extra chunks came from posts that had a separable second thought. Shortest 
+chunk is 152 characters and longest 422, so nothing came out as a fragment.
 
 I used no overlap. Overlap exists to stop a sentence being cut in half, and
 splitting on paragraph breaks means no sentence is cut at all, so the cost of

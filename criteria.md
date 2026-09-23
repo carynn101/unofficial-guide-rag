@@ -23,6 +23,7 @@ For at least 4 of my 5 test questions, the retrieved chunks include one that
 contains the answer.
 
 **Why this target:**
+
 The walking times file has four routes in it, so the Fenwick Court question could pull back the wrong route.
 
 ---
@@ -32,6 +33,7 @@ The walking times file has four routes in it, so the Fenwick Court question coul
 Every answer the system produces names at least one source document.
 
 **Why this target:**
+
 The grounding instruction tells the model to name the file every time, so this doesn't depend on luck.
 
 ---
@@ -43,6 +45,7 @@ stops it and the system returns "I don't have enough information about that" —
 in at least 4 of 5 tries.
 
 **Why this target:**
+
 My one covered question came back at 0.254 against a 0.6 cutoff, so I expect a clean gap. I'll add the full picture after Milestone 4.
 
 ---
@@ -64,6 +67,7 @@ I left room for one miss in case a post holds two separate thoughts.
 For at least 4 of my 5 test questions, the source file the system names actually contains the claim it made.
 
 **Why this target:**
+
 I picked this because my first test answer cited five files when the claim came from one, so I want to check the named source is the real source.
 
 
