@@ -116,30 +116,72 @@ Best time to do laundry here is Tuesday or Wednesday morning. Sunday after 6pm y
 
 ## Sample Answer
 
-Covered question "is the housing lottery random?" -> best distance 0.254.
-Starter cutoff: 0.6.
-
-**Question:**
+**Question:** When is the best time to do laundry in Aldridge Hall?
 
 **Answer:**
+```
+The best time to do laundry in Aldridge Hall is Tuesday or Wednesday morning.
 
+Source: housing_aldridge_hall_laundry.txt
 ```
-```
+Best distance 0.3021, under the 0.6 threshold, so the gate passed it to the model.
+
+I picked this question deliberately because it stresses grounding. `campus_life`
+has seven near-identical laundry files, one per building, and retrieval pulled
+four of them into the prompt — Aldridge, Tamsin Court, Innisfree Hall and Old
+Brewhouse. All four contain the same sentence about Tuesday or Wednesday
+morning; they differ only in prices and payment method. The model answered from
+Aldridge and cited only Aldridge, which is the behaviour I wanted.
+
+I reviewed `GROUNDING_INSTRUCTION` in `generate.py` and left it as shipped. It
+already requires the model to use only the supplied documents, to say so when
+they don't cover the question, and to name the filename — and it held under four
+competing near-duplicates, which is the hardest case this corpus offers.
+
+It's worth being honest that this question was easy to get right. Because every
+retrieved chunk carried the same timing advice, a wrong citation would still
+have produced a correct-looking answer, and my `expects` phrase ("Tuesday")
+would have passed either way. A stronger test would key on Aldridge's $1.75 wash
+price, which appears in only one of the seven files. That's what criterion 5 is
+for, and it's the first thing I'd tighten in unit 2.
+
 
 **My relevance cutoff:**
 
-<!-- The number you set in config.py, and how you got there.
+`THRESHOLD = 0.6` in `config.py` — the starter's default, which I kept after
+measuring rather than by leaving it alone.
 
-     You ran five questions your corpus covers and the five in OUT_OF_SCOPE
-     that it clearly doesn't, and wrote down the best distance for each. What
-     did those two groups look like? Where was the gap? Put the actual numbers
-     here — the table below wants all ten rows.
+The two groups came out cleanly separated. My five covered questions ran 0.1527
+to 0.3929; the five OUT_OF_SCOPE questions ran 0.8025 to 0.9340. That's a gap of
+0.41 with nothing in it, so 0.6 sits roughly centered rather than hugging either
+edge. Anything from about 0.45 to 0.75 would behave identically on these ten
+questions, which means the number is robust here rather than finely tuned.
 
-     Milestone 4. -->
+Both failure directions are visible in my own data. At 0.3 the gate would refuse
+four of my five covered questions, including the Aldridge laundry one at 0.3021
+that returns the correct file at rank 1. At 0.9 it would answer "what is the
+capital of Mongolia?" using campus posts — that question's nearest chunk was
+HIST 118 Modern World History at 0.8246, which is the embedding finding the
+closest thing to "world" in a corpus that has no world in it.
+
+I left `TOP_K = 5`. Ranks 4 and 5 were consistently loose padding (0.51 to 0.61,
+and in the library case rank 5 was 0.6041, above my own threshold), but the
+correct chunk was rank 1 on all five covered questions with a wide margin, so
+the extra context costs accuracy nothing.
+
 
 | Question | In corpus? | Best distance |
 |---|---|---|
-|  |  |  |
+| How long does a hold on a checked-out library book take to arrive? | Yes | 0.1527 |
+| How long is the walk from Fenwick Court to central campus? | Yes | 0.2201 |
+| When is the best time to do laundry in Aldridge Hall? | Yes | 0.3021 |
+| What do students do with extra dining dollars? | Yes | 0.3524 |
+| What is the maximum number of hours students can work on campus during term? | Yes | 0.3929 |
+| What is the recommended dosage of ibuprofen for a headache? | No | 0.8025 |
+| What is the capital of Mongolia? | No | 0.8246 |
+| How do I write a for loop in Rust? | No | 0.8768 |
+| Who won the 1994 World Cup? | No | 0.8859 |
+| How do I change the oil in a diesel engine? | No | 0.9340 |
 
 ## How I Used AI
 
