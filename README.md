@@ -4,30 +4,25 @@ Carynn Cocchiola — corpus: `campus_life`
 
 Retrieval-augmented Q&A over 88 student-written campus posts. Paragraph-boundary chunking, vector search with a relevance gate, and answers grounded in cited sources.
 
-> **This file is your submission.** Fill it in as you go — most sections get
-> written during the milestone that produces them, not at the end.
->
-> How the starter works, and every command you'll need, is in `RUNNING.md`.
-> Leave that file alone.
->
-> **Paste everything as text.** No screenshots, no video. A typed table gets
-> full credit; a picture of the same table gets none.
->
-> Delete these instruction blocks as you replace them. The `<!-- -->` comments
-> are notes to you and don't show up when the page renders — you can leave them
-> or remove them.
-
 ---
 
 # Unit 1
 
 ## What This Does
 
-<!-- Three or four sentences. Which corpus you picked, and the kinds of
-     questions your system answers. Write it for someone who has never seen
-     this repo.
+The Unofficial Guide answers plain questions about campus life from the things
+students actually tell each other, rather than from official handbooks. The
+corpus is `campus_life`: 88 short student-written posts covering housing,
+dining halls, course workloads, on-campus jobs, walking times and registrar
+processes — the kind of information that lives in group chats and never makes it
+onto a university website.
 
-     Milestone 5. -->
+You ask something specific ("when is the best time to do laundry in Aldridge
+Hall?", "how long does a library hold take?", "what happens if I drop a course
+after week two?") and the system retrieves the closest chunks from a vector
+store, checks that the best one is actually relevant, and answers using only
+what it retrieved, naming the file the answer came from. If nothing comes back
+close enough, it says it doesn't have enough information instead of guessing.
 
 ## Chunking Strategy
 
@@ -58,7 +53,7 @@ minimum before a chunk is emitted and any leftover text merged back into the
 previous chunk. The minimum is what stops orphans — a bare title line is not
 something anyone can answer a question from, and the brief warned that a naive
 split on advice_threads produces a 2-character chunk. The result was 105 chunks:
-17 posts had a separable second thought, and 71 stayed whole, which is the right
+the 17 extra chunks came from posts that had a separable second thought, which is the right
 outcome for single-topic posts. Shortest chunk is 152 characters and longest 422,
 so nothing came out as a fragment.
 
@@ -148,6 +143,19 @@ for, and it's the first thing I'd tighten in unit 2.
 
 **My relevance cutoff:**
 
+| Question | In corpus? | Best distance |
+|---|---|---|
+| How long does a hold on a checked-out library book take to arrive? | Yes | 0.1527 |
+| How long is the walk from Fenwick Court to central campus? | Yes | 0.2201 |
+| When is the best time to do laundry in Aldridge Hall? | Yes | 0.3021 |
+| What do students do with extra dining dollars? | Yes | 0.3524 |
+| What is the maximum number of hours students can work on campus during term? | Yes | 0.3929 |
+| What is the recommended dosage of ibuprofen for a headache? | No | 0.8025 |
+| What is the capital of Mongolia? | No | 0.8246 |
+| How do I write a for loop in Rust? | No | 0.8768 |
+| Who won the 1994 World Cup? | No | 0.8859 |
+| How do I change the oil in a diesel engine? | No | 0.9340 |
+
 `THRESHOLD = 0.6` in `config.py` — the starter's default, which I kept after
 measuring rather than by leaving it alone.
 
@@ -169,39 +177,32 @@ and in the library case rank 5 was 0.6041, above my own threshold), but the
 correct chunk was rank 1 on all five covered questions with a wide margin, so
 the extra context costs accuracy nothing.
 
-
-| Question | In corpus? | Best distance |
-|---|---|---|
-| How long does a hold on a checked-out library book take to arrive? | Yes | 0.1527 |
-| How long is the walk from Fenwick Court to central campus? | Yes | 0.2201 |
-| When is the best time to do laundry in Aldridge Hall? | Yes | 0.3021 |
-| What do students do with extra dining dollars? | Yes | 0.3524 |
-| What is the maximum number of hours students can work on campus during term? | Yes | 0.3929 |
-| What is the recommended dosage of ibuprofen for a headache? | No | 0.8025 |
-| What is the capital of Mongolia? | No | 0.8246 |
-| How do I write a for loop in Rust? | No | 0.8768 |
-| Who won the 1994 World Cup? | No | 0.8859 |
-| How do I change the oil in a diesel engine? | No | 0.9340 |
-
 ## How I Used AI
 
-<!-- Two specific moments. For each: what you asked for, what came back, and
-     what you changed about it.
+**1. My five test questions.** I asked Claude to write them for me. It refused,
+on the grounds that I'd have to defend them next unit, and instead told me to
+read the files and say what each one actually answered. That turned out to
+matter: two of the questions I'd drafted had no answer in my corpus at all. I'd
+asked what on-campus jobs exist outside library and dining work, but
+`money_jobs.txt` only names those two — the real content is the 20-hour weekly
+cap. And I'd asked for the "most central location on campus for walking," which
+`transit_walking.txt` never identifies; it gives four measured point-to-point
+times. Both would have looked like retrieval failures in unit 2 when they were
+really bad test cases. I rewrote them against what the files say and took
+Claude's fix for the dict syntax, which I'd had wrong — the question text was a
+key instead of a value.
 
-     "I asked Claude to write the chunking function from my notes. It ignored
-     the overlap, so I added that myself" is the level of detail we're after.
-     "I used AI to help me code" is not.
-
-     Milestone 5. -->
-
-**1.**
-
-**2.**
-
-<!-- ── Stretch features ─────────────────────────────────────────────────────
-     Doing one? Say so here BEFORE you start. A feature this README never
-     claims earns nothing.
-     ───────────────────────────────────────────────────────────────────────── -->
+**2. The chunking function.** I described my corpus (88 short posts, title line,
+blank line, one or two body paragraphs) and asked for a paragraph-boundary
+chunker with a minimum size. What came back worked and took 88 chunks to 105.
+One thing I checked rather than accepted. The filename in my own notes was
+misspelled — I'd written `aldrige` instead of `aldridge` — and the draft
+write-up inherited it from me. When `cat` on that path failed I ran `ls` to find
+the real name, and that's how I found there are seven near-identical laundry
+files, one per building, differing only in prices and payment method. That
+became the observation the whole Sample Answer section rests on, and it's why I
+now think my `expects` phrase for that question is too weak to catch a wrong
+citation.
 
 ---
 
