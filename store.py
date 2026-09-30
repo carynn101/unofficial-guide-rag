@@ -178,6 +178,65 @@ def build_index(
     return len(chunks)
 
 
+RRF_K = 60  # standard Reciprocal Rank Fusion constant
+
+
+def _tokenize(text: str) -> list[str]:
+    """Lowercase words and numbers, for BM25 keyword matching."""
+    import re
+
+    return re.findall(r"\w+", text.lower())
+
+
+def _hybrid_search(collection, question: str, top_k: int) -> list[Result]:
+    """
+    Unit 2 improvement: combine semantic and keyword (BM25) rankings.
+
+    Both rankings cover every chunk (the corpus is small), then Reciprocal Rank
+    Fusion merges them: score = 1/(60 + semantic rank) + 1/(60 + keyword rank).
+    Each Result keeps its real cosine distance, so the 0.6 gate still compares
+    like with like. Only the order of results changes.
+    """
+    from rank_bm25 import BM25Okapi
+
+    raw = collection.query(
+        query_embeddings=embed([question]),
+        n_results=collection.count(),
+    )
+    ids = raw["ids"][0]
+    docs = raw["documents"][0]
+    metas = raw["metadatas"][0]
+    dists = raw["distances"][0]
+
+    # Semantic rank: Chroma already returns nearest-first.
+    semantic_rank = {cid: rank for rank, cid in enumerate(ids, start=1)}
+
+    # Keyword rank: BM25 over the same chunks. Ties keep semantic order.
+    bm25 = BM25Okapi([_tokenize(d) for d in docs])
+    scores = bm25.get_scores(_tokenize(question))
+    keyword_order = sorted(range(len(ids)), key=lambda i: scores[i], reverse=True)
+    keyword_rank = {ids[i]: rank for rank, i in enumerate(keyword_order, start=1)}
+
+    def fused(i: int) -> float:
+        return 1 / (RRF_K + semantic_rank[ids[i]]) + 1 / (RRF_K + keyword_rank[ids[i]])
+
+    order = sorted(range(len(ids)), key=fused, reverse=True)
+
+    results: list[Result] = []
+    for i in order[:top_k]:
+        meta = metas[i]
+        results.append(
+            Result(
+                text=docs[i],
+                source=str(meta.get("source", "unknown")),
+                label=f"{meta.get('source', 'unknown')}#{meta.get('index', 0)}",
+                distance=float(dists[i]),
+                produced_by=str(meta.get("produced_by", "unknown")),
+            )
+        )
+    return results
+
+
 def search(
     question: str,
     top_k: int | None = None,
@@ -185,9 +244,11 @@ def search(
     variant: str = "default",
 ) -> list[Result]:
     """
-    Retrieve the chunks closest in meaning to a question.
+    Retrieve the chunks most relevant to a question.
 
-    Returns them nearest-first, each with its distance.
+    With config.HYBRID_SEARCH off, this is the unit 1 behaviour: semantic only,
+    nearest-first. With it on, results are ordered by fused semantic + BM25
+    rank (see `_hybrid_search`). Every result carries its cosine distance.
     """
     top_k = top_k or config.TOP_K
     name = config.collection_name(corpus, variant)
@@ -198,6 +259,9 @@ def search(
         raise RuntimeError(
             f"No index called '{name}'. Run `python app.py index` first."
         ) from exc
+
+    if getattr(config, "HYBRID_SEARCH", False):
+        return _hybrid_search(collection, question, top_k)
 
     raw = collection.query(
         query_embeddings=embed([question]),

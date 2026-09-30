@@ -108,3 +108,6 @@ def collection_name(name: str | None = None, variant: str = "default") -> str:
     if not cleaned[-1].isalnum():
         cleaned = f"{cleaned}0"
     return cleaned[:63].rstrip("_-") or "collection"
+
+# Unit 2 improvement: BM25 + semantic hybrid retrieval. False = unit 1 behaviour.
+HYBRID_SEARCH = True
