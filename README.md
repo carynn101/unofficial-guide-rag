@@ -240,6 +240,24 @@ those three put, or nearly put, a wrong claim in my submission.
 
 # Unit 2
 
+## Stretch Feature: Second Improvement (declared before building)
+
+**What I'll change:** remove common English stopwords and question words
+("how", "what", "do", "the", …) from BM25 tokenization in
+`store.py::_tokenize`, behind a new `config.BM25_STOPWORDS` switch. Hybrid
+search stays on; this changes only which words BM25 scores.
+
+**Which failure it targets:** the keyword noise diagnosed in The
+Improvement. BM25 scores filler words like any other term, so common-word
+matches pull in off-topic chunks.
+
+**How I'll measure it:** a third `run_eval.py` run (`--label stopwords`)
+in the same five-criterion table, plus ranked `app.py retrieve` output for
+all 10 questions compared against `results/retrieve_after.txt`.
+
+**My prediction:** it should reduce matches on question words, but "long"
+and "take" (the library holds noise) are not standard stopwords, so that
+particular failure may survive. I'll report the result either way.
 
 ## Run Log — Before
 
