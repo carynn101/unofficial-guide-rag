@@ -178,6 +178,8 @@ the extra context costs accuracy nothing.
 
 ## How I Used AI
 
+### Unit 1
+
 **1. My five test questions.** I asked Claude to write them for me. It refused,
 on the grounds that I'd have to defend them next unit, and instead told me to
 read the files and say what each one actually answered. That turned out to
@@ -203,19 +205,48 @@ became the observation the whole Sample Answer section rests on, and it's why I
 now think my `expects` phrase for that question is too weak to catch a wrong
 citation.
 
+### Unit 2
+
+I used Claude as a working partner through the whole unit:
+
+- **Planning and commands.** It laid out a time plan and gave me the shell
+  commands to run the eval, capture ranked retrieval, and inspect files.
+- **Aggregating results.** It turned the per-question results file into the
+  per-criterion run log. I confirmed each claim against the source files
+  myself, using grep, `wc -c`, and `app.py retrieve`.
+- **Drafting.** It drafted wording for the verdicts, diagnoses and write-up.
+  I edited these and checked every number against my `results/` files.
+- **Code.** It wrote `store.py::_hybrid_search` and the script that inserted
+  it. Before running the eval I checked `gate.py` to understand how the change
+  could affect the gate.
+
+**Where the AI was wrong, and how I caught it:**
+- It assumed my index used the starter's 800-character chunker from
+  `config.py`, and built my criterion 4 reasoning (and a first correction)
+  on that. My index actually uses the paragraph chunker I wrote in unit 1,
+  which my own unit 1 section states. I caught it in a final read-through
+  against unit 1 and rewrote the correction under Diagnoses.
+- A filter command it gave me hid bulleted lines, which made Fenwick run 3
+  look like it named no source. That would have flipped criterion 2 to
+  MISSED. I checked the raw file and the sources were there.
+- During a save conflict in VS Code, an autocomplete line
+  (`from chromadb import config`) got into `config.py`. I caught it with
+  `git diff` before committing.
+
+The lesson: AI output needs the same verification as system output. Two of
+those three put, or nearly put, a wrong claim in my submission.
+
 ---
 
 # Unit 2
 
-<!-- These sections get ADDED to what's already above. Don't delete or rewrite
-     unit 1 — the point is that someone can see what you said before you knew
-     how it went. -->
 
 ## Run Log — Before
 
 Produced by `run_eval.py::main` → `results/run_2026-09-29_1935_before.md`.
 Retrieval via `store.py::search`, chunks from `chunker.py::split_documents`
-(fixed-size, 800 chars, 120 overlap). top-k 5, relevance cutoff 0.6,
+(paragraph-boundary, 150-char minimum, no overlap; 105 chunks). top-k 5,
+relevance cutoff 0.6,
 3 runs per question, caching off (15 model calls).
 
 | Criterion | Target | Run 1 | Run 2 | Run 3 | Verdict |
@@ -333,7 +364,7 @@ test, not my system.
   a *plausible* question my corpus doesn't cover.
 - **Criterion 1 cast a wide net.** With top-k 5 over a small corpus, "the
   answer is somewhere in five chunks" is easy to clear. The laundry question
-  shows why that matters: it retrieved four *other* halls' laundry files plus
+  shows why that matters: it retrieved three *other* halls' laundry files plus
   `dining_halden_hall.txt` alongside the right one. And because seven laundry
   files contain the identical sentence ("Best time to do laundry here is
   Tuesday or Wednesday morning"), that question couldn't catch a wrong-hall
@@ -351,16 +382,19 @@ questions." One catch: `run_eval.py` line 126 builds the retrieved list with
 order and throws away rank, so I'd need to log rank order before I could
 measure this.
 
-> **Correction (added after the Milestone 4 run):** I wrote above that
-> "every document sits whole inside one chunk." That was too broad.
-> `results/retrieve_after.txt` shows two different chunks of
-> `housing_fenwick_court.txt` (one starting "Fenwick Court — what it's
-> actually like", one starting "The bad: the furthest housing…"), and
-> `course_hist_118.txt` also appears as two chunks, so longer documents do
-> split at 800 characters. The point about criterion 4 still holds for the
-> five documents my answers come from: all are under 800 characters
-> (`wc -c`), so none of them can split. The verdict doesn't change, but the
-> claim as I first wrote it was wrong.
+> **Correction (added during final review):** Two things in the criterion 4
+> bullet above are wrong. First, my index doesn't use 800-character chunks.
+> In unit 1 I replaced the starter's fixed-size chunker with
+> `chunker.py::split_documents`, which splits on paragraph breaks with a
+> 150-character minimum and no overlap (88 documents → 105 chunks, 152–422
+> characters). `CHUNK_SIZE = 800` in `config.py` only applies to the
+> starter's fallback chunker. Second, documents do split:
+> `results/retrieve_after.txt` shows two chunks each of
+> `housing_fenwick_court.txt` and `course_hist_118.txt`. The conclusion
+> still holds, for a different reason: paragraph splitting never cuts a
+> sentence, and every `expects` phrase is a word or short phrase inside one
+> sentence, so no chunk boundary can split one. The only way criterion 4
+> could miss was a wording mismatch, which is what happened.
 
 ## The Improvement
 
@@ -370,11 +404,11 @@ score (`rank-bm25`), then merges the two with Reciprocal Rank Fusion:
 `score = 1/(60 + semantic rank) + 1/(60 + keyword rank)`. The top 5 by fused
 score are returned. It sits behind `config.HYBRID_SEARCH`; setting it to
 `False` restores the unit 1 behaviour exactly. Nothing else in the pipeline
-changed: same corpus, same chunks (800/120), same index, same prompt, same
+changed: same corpus, same chunks (paragraph-boundary, 105 chunks), same index, same prompt, same
 top-k, same 0.6 cutoff.
 
 **Why I picked it:** My diagnosis found that semantic search fills the top 5
-with near-miss files. The laundry question pulled four other halls' laundry
+with near-miss files. The laundry question pulled three other halls' laundry
 files plus a dining review, and my questions name specific places ("Aldridge
 Hall", "Fenwick Court") that exact keyword matching should reward.
 
@@ -478,17 +512,56 @@ that keyword rank equally with meaning.
 
 ## What's Still Broken
 
-<!-- For each criterion still missed after your fix: what you'd do about it,
-     and why you stopped where you did.
+No criterion is missed, before or after the fix. But "all MET" isn't the
+same as "nothing broken," and the test turned up real problems my criteria
+don't catch:
 
-     "I ran out of time" is fine if it's true. Pretending nothing is left is
-     not.
-
-     Milestone 5. -->
+- **Keyword noise from common words.** Hybrid search pulled
+  `transit_walking.txt` into the library holds results because both contain
+  "long" and "take." **What I'd do:** strip stopwords and question words in
+  `store.py::_tokenize`, or weight the semantic rank more heavily than the
+  keyword rank in the fusion. **Why I stopped:** that would be a second
+  change, and this unit allows one. I wanted the before/after to show what
+  hybrid search alone did.
+- **Wrong-hall retrieval below rank 1.** The laundry question still returns
+  four other halls' laundry files at ranks 2–5. It doesn't show in any
+  criterion, because seven laundry files contain the identical answer
+  sentence. **What I'd do:** filter by the hall named in the question (Chroma
+  `where` on source). **Why I stopped:** metadata filtering was the previous
+  unit's stretch option, and adding it now would break the one-change rule.
+- **Q1's `expects` phrase doesn't match the corpus.** `rollover` never
+  appears; the document says "rolls over." **Why I didn't fix it:** editing
+  `questions.py` mid-unit would change the test, not the system, and make
+  before/after incomparable.
+- **The run log throws away rank.** `run_eval.py` line 126 sorts retrieved
+  files alphabetically. I worked around it with `app.py retrieve` output, but
+  the eval itself can't measure rank. **What I'd do:** log results in rank
+  order with distances. I left it because it changes the measuring tool, and
+  I'd rather do that at the start of a unit than in the middle.
+- **Citation format varies.** Answers cite as a `Source:` line, inline
+  `(file.txt)`, or a bulleted list. My manual check handled it, but a string
+  -matching scorer would struggle. **What I'd do:** tighten the grounding
+  prompt to require one fixed format.
 
 ## What I'd Do Differently
 
-<!-- Knowing what you know now — which of your five criteria would you write
-     differently, and why?
-
-     Milestone 5. -->
+- **Criterion 3: use near-miss out-of-scope questions.** Mongolia, diesel
+  engines and Rust loops are so far from campus life that the gate never came
+  within 0.2 of the cutoff. A real test would use campus-sounding questions my
+  corpus doesn't cover (checked with grep first), where the gate actually has
+  to decide.
+- **Criterion 1: require rank 1, not top 5.** "The top-ranked chunk comes
+  from the correct file, for at least 4 of 5" is much harder to clear by
+  accident. It needs rank logging first (see What's Still Broken).
+- **Criterion 4: copy `expects` phrases from the source text.** My one miss
+  came from a word I chose, not from the system. Taking the phrase verbatim
+  from the document ("rolls over") makes the check measure chunking and
+  nothing else. It also needs a fact that spans a paragraph break, because my
+  chunker never cuts a sentence, so a short phrase can never be split.
+- **Test questions: pick facts that differ between near-duplicate files.**
+  The laundry question can't catch a wrong-hall retrieval because every hall
+  gives the same answer. Wash prices do differ ($1.50, $1.75, $2.00 across
+  halls in the previews), so a price question would test whether retrieval
+  found the *right* hall. One caution from my own data: my unit 1 note said Aldridge's $1.75 wash
+  price appears in only one file, but Innisfree charges $1.75 too. I'd grep
+  for a fact that appears in exactly one laundry file before using it.
