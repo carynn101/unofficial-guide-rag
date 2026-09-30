@@ -2,7 +2,7 @@
 
 Carynn Cocchiola — corpus: `campus_life`
 
-Retrieval-augmented Q&A over 88 student-written campus posts. Paragraph-boundary chunking, vector search with a relevance gate, and answers grounded in cited sources.
+Retrieval-augmented Q&A over 88 student-written campus posts. Paragraph-boundary chunking, hybrid (semantic + BM25) search with a relevance gate, and answers grounded in cited sources.
 
 ---
 
@@ -219,6 +219,9 @@ I used Claude as a working partner through the whole unit:
 - **Code.** It wrote `store.py::_hybrid_search` and the script that inserted
   it. Before running the eval I checked `gate.py` to understand how the change
   could affect the gate.
+  For the stretch, it also wrote the stopword tokenizer; I declared the
+  stretch and pushed that commit before running the script that changed
+  the code.
 
 **Where the AI was wrong, and how I caught it:**
 - It assumed my index used the starter's 800-character chunker from
@@ -528,11 +531,105 @@ keeps every word, including question words. In a small corpus of short
 posts, one common-word match gives a chunk a high BM25 rank, and RRF weights
 that keyword rank equally with meaning.
 
+## Stretch: Second Improvement — Results
+
+**What I changed:** Declared in the README in commit `bbaad5c`, then built
+in `8428ae1`. `store.py::_tokenize` now drops a standard list of English
+stopwords and question words (`STOPWORDS`) before BM25 scoring, behind
+`config.BM25_STOPWORDS`. Hybrid search stays on; nothing else changed. The
+list is deliberately generic. I did not add "long" or "take" to fix the
+library question, because tuning the list to my five test questions would
+be fitting the test, not improving the system. For example,
+"How long does a hold take?" now tokenizes to `['long', 'hold', 'take']`.
+
+**Which failure it targets:** the keyword noise diagnosed in The
+Improvement, where BM25 scored filler words like any other term.
+
+### Run Log — Stretch (hybrid + stopwords)
+
+Produced by `run_eval.py::main` → `results/run_2026-09-29_2137_stopwords.md`,
+with `HYBRID_SEARCH = True` and `BM25_STOPWORDS = True`. 3 runs per
+question, caching off (15 model calls). Ranked retrieval for all 10
+questions: `results/retrieve_stopwords.txt`.
+
+| Criterion | Target | Run 1 | Run 2 | Run 3 | Verdict |
+|---|---|---|---|---|---|
+| 1. Retrieved chunk contains the answer | 4 of 5 | 5/5 | 5/5 | 5/5 | MET |
+| 2. Every answer names a source | 5 of 5 | 5/5 | 5/5 | 5/5 | MET |
+| 3. Gate stops out-of-corpus questions | 4 of 5 | 5/5 | 5/5 | 5/5 | MET |
+| 4. Single chunk holds the full `expects` phrase | 4 of 5 | 4/5 | 4/5 | 4/5 | MET |
+| 5. Named source contains the claim | 4 of 5 | 5/5 | 5/5 | 5/5 | MET |
+
+### All three logs, side by side
+
+| Criterion | Before (semantic) | After (hybrid) | Stretch (hybrid + stopwords) |
+|---|---|---|---|
+| 1 | 5/5, 5/5, 5/5 | 5/5, 5/5, 5/5 | 5/5, 5/5, 5/5 |
+| 2 | 5/5, 5/5, 5/5 | 5/5, 5/5, 5/5 | 5/5, 5/5, 5/5 |
+| 3 | 5/5 | 5/5 | 5/5 |
+| 4 | 4/5, 4/5, 4/5 | 4/5, 4/5, 4/5 | 4/5, 4/5, 4/5 |
+| 5 | 5/5, 5/5, 5/5 | 5/5, 5/5, 5/5 | 5/5, 5/5, 5/5 |
+
+All in-scope best distances are unchanged across all three logs (0.352,
+0.302, 0.153, 0.393, 0.220), and rank 1 is the answer file for every
+question in all three.
+
+### Real output: what changed below rank 1
+
+**Dining dollars: fixed.** Ranks 3–5 returned exactly to the semantic-only
+neighbours, so this noise came entirely from stopwords ("what", "do",
+"with"):
+```
+semantic   3 0.6044 admin_meal_plan_changes.txt · 4 0.6048 dining_verrill_street_grill.txt · 5 0.6112 admin_printing_quota.txt
+hybrid     3 0.6671 admin_campus_jobs_and_financial_aid.txt · 4 0.6873 dining_pellew_dining_hall_followup.txt · 5 0.7704 course_cs_210.txt
+stopwords  3 0.6044 admin_meal_plan_changes.txt · 4 0.6048 dining_verrill_street_grill.txt · 5 0.6112 admin_printing_quota.txt
+```
+
+**Laundry and Fenwick: hybrid's gains kept.** Same files as the hybrid
+run, only reordered. `dining_halden_hall.txt` stays out of laundry, and both
+Fenwick chunks stay in, including "The bad: the furthest housing from
+central campus, about 18 minutes on foot." The answers still cite both files:
+```
+The walk from Fenwick Court to central campus takes about 18 minutes.
+
+Source: `transit_walking.txt` (also mentioned in `housing_fenwick_court.txt`).
+```
+
+**Library holds: partly better, as predicted.** `transit_walking.txt` fell
+from rank 2 to rank 4 but is still in the top 5, because "long" and "take"
+are not stopwords:
+```
+hybrid     2 0.6269 transit_walking.txt · 3 0.6041 dining_verrill_street_grill_followup.txt · 4 0.5964 study_group_rooms.txt · 5 0.5380 study_library_hours.txt
+stopwords  2 0.5964 study_group_rooms.txt · 3 0.5380 study_library_hours.txt · 4 0.6269 transit_walking.txt · 5 0.6395 advising_registration.txt
+```
+
+**Work hours: not better.** `course_math_220.txt` left and
+`transit_shuttle.txt` (0.5678) arrived; the Morrow House noise file stayed.
+The matching words ("hours", "campus", "work") are content words that no
+stopword list should remove.
+
+**Out-of-scope questions: back to pure semantic ranking.** All five match
+`results/retrieve_before.txt` again, and Mongolia's gate distance went from
+0.826 back to 0.825. Once "what is the … of" is stripped, the remaining
+words (e.g. "capital", "mongolia") mostly match nothing in the corpus, so
+BM25 contributes little or nothing and the fused ranking falls back to
+semantic order. Where a stray keyword does match, it isn't enough to lift
+that chunk into the top 5.
+
+**Did it help?** Not on my criteria: all five are MET with identical
+numbers in all three logs. Below rank 1 it helped. It fully fixed dining
+dollars, kept hybrid's gains on laundry and Fenwick, and moved the library
+noise down from rank 2 to rank 4, though not out. It did nothing for work
+hours. My prediction held: stopword removal fixes noise from filler words
+but not from content words like "long", "take" and "hours". Fixing those
+would need a different kind of change, such as weighting the semantic rank
+above the keyword rank in the fusion.
+
 ## What's Still Broken
 
-No criterion is missed, before or after the fix. But "all MET" isn't the
-same as "nothing broken," and the test turned up real problems my criteria
-don't catch:
+No criterion is missed in any of the three run logs. But "all MET" isn't
+the same as "nothing broken," and the test turned up real problems my
+criteria don't catch:
 
 - **Keyword noise from common words.** Hybrid search pulled
   `transit_walking.txt` into the library holds results because both contain
@@ -541,6 +638,14 @@ don't catch:
   keyword rank in the fusion. **Why I stopped:** that would be a second
   change, and this unit allows one. I wanted the before/after to show what
   hybrid search alone did.
+
+  > **Update after the stretch:** I built the stopword half of this (see
+  > Stretch: Second Improvement — Results). It fixed dining dollars and moved
+  > the library noise from rank 2 to rank 4, but `transit_walking.txt` is
+  > still in the library results because "long" and "take" aren't stopwords.
+  > The remaining noise comes from content words, so the next step would be
+  > weighting semantic rank above keyword rank in the fusion.
+  
 - **Wrong-hall retrieval below rank 1.** The laundry question still returns
   four other halls' laundry files at ranks 2–5. It doesn't show in any
   criterion, because seven laundry files contain the identical answer
