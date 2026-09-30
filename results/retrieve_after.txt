@@ -1,0 +1,170 @@
+
+Question: What do students do with extra dining dollars?
+
+#   distance   source                           preview
+----------------------------------------------------------------------------------------------------
+1   0.3524     admin_dining_dollars.txt         On the dining dollars  Declining balance — what ever...
+2   0.4947     money_jobs.txt                   On-campus work  Library and dining jobs post in the ...
+3   0.6671     admin_campus_jobs_and_financial_aid.txt On the campus jobs and financial aid  Work-study ear...
+4   0.6873     dining_pellew_dining_hall_followup.txt Re: Pellew Dining Hall  Adding to what people have s...
+5   0.7704     course_cs_210.txt                CS 210 Data Structures  I'm a junior and I've done t...
+
+Gate: best distance 0.352 is under the 0.6 cutoff
+
+Lower is better. 0.3 is a close match, 0.9 is unrelated.
+Milestone 4: run your five questions, then the five in OUT_OF_SCOPE
+that your documents clearly don't cover, and look for the gap
+between the two groups. Your cutoff goes in that gap.
+
+Question: When is the best time to do laundry in Aldridge Hall?
+
+#   distance   source                           preview
+----------------------------------------------------------------------------------------------------
+1   0.3021     housing_aldridge_hall_laundry.txt Laundry in Aldridge Hall  Machines take $1.75 wash, ...
+2   0.4479     housing_tamsin_court_laundry.txt Laundry in Tamsin Court  Machines take in-unit washe...
+3   0.5057     housing_innisfree_hall_laundry.txt Laundry in Innisfree Hall  Machines take $1.75 wash,...
+4   0.5132     housing_old_brewhouse_laundry.txt Laundry in Old Brewhouse  Machines take $1.50 wash, ...
+5   0.5214     housing_morrow_house_laundry.txt Laundry in Morrow House  Machines take $1.50 wash, $...
+
+Gate: best distance 0.302 is under the 0.6 cutoff
+
+Lower is better. 0.3 is a close match, 0.9 is unrelated.
+Milestone 4: run your five questions, then the five in OUT_OF_SCOPE
+that your documents clearly don't cover, and look for the gap
+between the two groups. Your cutoff goes in that gap.
+
+Question: How long does a hold on a checked-out library book take to arrive?
+
+#   distance   source                           preview
+----------------------------------------------------------------------------------------------------
+1   0.1527     admin_library_holds.txt          On the library holds  You can place a hold on a chec...
+2   0.6269     transit_walking.txt              Walking times across campus  Rough numbers, measured...
+3   0.6041     dining_verrill_street_grill_followup.txt Re: Verrill Street Grill  Adding to what people have...
+4   0.5964     study_group_rooms.txt            Booking a group study room  Rooms book two weeks ahe...
+5   0.5380     study_library_hours.txt          Library hours and where to actually sit  Open until ...
+
+Gate: best distance 0.153 is under the 0.6 cutoff
+
+Lower is better. 0.3 is a close match, 0.9 is unrelated.
+Milestone 4: run your five questions, then the five in OUT_OF_SCOPE
+that your documents clearly don't cover, and look for the gap
+between the two groups. Your cutoff goes in that gap.
+
+Question: What is the maximum number of hours students can work on campus during term?
+
+#   distance   source                           preview
+----------------------------------------------------------------------------------------------------
+1   0.3929     money_jobs.txt                   On-campus work  Library and dining jobs post in the ...
+2   0.5527     study_group_rooms.txt            Booking a group study room  Rooms book two weeks ahe...
+3   0.5771     study_library_hours.txt          Library hours and where to actually sit  Open until ...
+4   0.5676     course_math_220.txt              Expect 6 to 8 hours a week, almost all of it on prob...
+5   0.6658     housing_morrow_house_noise.txt   Noise levels in Morrow House  Asked about this a lot...
+
+Gate: best distance 0.393 is under the 0.6 cutoff
+
+Lower is better. 0.3 is a close match, 0.9 is unrelated.
+Milestone 4: run your five questions, then the five in OUT_OF_SCOPE
+that your documents clearly don't cover, and look for the gap
+between the two groups. Your cutoff goes in that gap.
+
+Question: How long is the walk from Fenwick Court to central campus?
+
+#   distance   source                           preview
+----------------------------------------------------------------------------------------------------
+1   0.2201     transit_walking.txt              Walking times across campus  Rough numbers, measured...
+2   0.4190     transit_shuttle.txt              It's free with a student ID. The stop outside Fenwic...
+3   0.6011     housing_fenwick_court.txt        The bad: the furthest housing from central campus, a...
+4   0.5842     housing_fenwick_court_noise.txt  Noise levels in Fenwick Court  Asked about this a lo...
+5   0.5114     housing_fenwick_court.txt        Fenwick Court — what it's actually like  Just finish...
+
+Gate: best distance 0.220 is under the 0.6 cutoff
+
+Lower is better. 0.3 is a close match, 0.9 is unrelated.
+Milestone 4: run your five questions, then the five in OUT_OF_SCOPE
+that your documents clearly don't cover, and look for the gap
+between the two groups. Your cutoff goes in that gap.
+
+Question: What is the capital of Mongolia?
+
+#   distance   source                           preview
+----------------------------------------------------------------------------------------------------
+1   0.9259     housing_calder_annexe.txt        Calder Annexe — what it's actually like  Second-year...
+2   0.9740     winter_gear.txt                  What winter is actually like here  Cold from mid-Nov...
+3   0.8259     course_hist_118.txt              HIST 118 Modern World History  Transferred in last y...
+4   0.9482     course_engl_205_exams.txt        ENGL 205 Writing for the Sciences — assessment  No e...
+5   0.9964     housing_innisfree_hall_noise.txt Noise levels in Innisfree Hall  Asked about this a l...
+
+Gate: best distance 0.826 is over the 0.6 cutoff — refusing
+
+Lower is better. 0.3 is a close match, 0.9 is unrelated.
+Milestone 4: run your five questions, then the five in OUT_OF_SCOPE
+that your documents clearly don't cover, and look for the gap
+between the two groups. Your cutoff goes in that gap.
+
+Question: How do I change the oil in a diesel engine?
+
+#   distance   source                           preview
+----------------------------------------------------------------------------------------------------
+1   0.9340     admin_meal_plan_changes.txt      On the meal plan changes  You can change your meal p...
+2   0.9909     dining_verrill_street_grill.txt  Verrill Street Grill  I'm a junior and I've done thi...
+3   0.9685     dining_kestrel_commons.txt       Kestrel Commons  I'm a junior and I've done this twi...
+4   0.9545     housing_old_brewhouse_laundry.txt Laundry in Old Brewhouse  Machines take $1.50 wash, ...
+5   0.9958     dining_verrill_street_grill_followup.txt Re: Verrill Street Grill  Adding to what people have...
+
+Gate: best distance 0.934 is over the 0.6 cutoff — refusing
+
+Lower is better. 0.3 is a close match, 0.9 is unrelated.
+Milestone 4: run your five questions, then the five in OUT_OF_SCOPE
+that your documents clearly don't cover, and look for the gap
+between the two groups. Your cutoff goes in that gap.
+
+Question: Who won the 1994 World Cup?
+
+#   distance   source                           preview
+----------------------------------------------------------------------------------------------------
+1   0.8859     course_hist_118_exams.txt        HIST 118 Modern World History — assessment  No exams...
+2   0.8986     course_hist_118.txt              HIST 118 Modern World History  Transferred in last y...
+3   0.9622     admin_housing_lottery.txt        On the housing lottery  The housing lottery is not r...
+4   0.9475     admin_study_abroad.txt           On the study abroad  Applications open in October fo...
+5   0.9901     course_hist_118_workload.txt     Workload for HIST 118 Modern World History  People k...
+
+Gate: best distance 0.886 is over the 0.6 cutoff — refusing
+
+Lower is better. 0.3 is a close match, 0.9 is unrelated.
+Milestone 4: run your five questions, then the five in OUT_OF_SCOPE
+that your documents clearly don't cover, and look for the gap
+between the two groups. Your cutoff goes in that gap.
+
+Question: What is the recommended dosage of ibuprofen for a headache?
+
+#   distance   source                           preview
+----------------------------------------------------------------------------------------------------
+1   0.8745     course_engl_205_exams.txt        ENGL 205 Writing for the Sciences — assessment  No e...
+2   0.8708     dining_the_ridgeway_cafe.txt     The Ridgeway Café  Second-year here. Wait times: 10 ...
+3   0.9039     course_phys_130.txt              PHYS 130 Mechanics  Just finished a year in this bui...
+4   0.8025     course_hist_118.txt              Expect a lot of reading, about 120 pages a week, but...
+5   0.8637     health_center.txt                Counselling is separate, in the same building, and h...
+
+Gate: best distance 0.803 is over the 0.6 cutoff — refusing
+
+Lower is better. 0.3 is a close match, 0.9 is unrelated.
+Milestone 4: run your five questions, then the five in OUT_OF_SCOPE
+that your documents clearly don't cover, and look for the gap
+between the two groups. Your cutoff goes in that gap.
+
+Question: How do I write a for loop in Rust?
+
+#   distance   source                           preview
+----------------------------------------------------------------------------------------------------
+1   0.8768     course_engl_205.txt              ENGL 205 Writing for the Sciences  Transferred in la...
+2   0.9298     course_cs_340.txt                CS 340 Databases  I'm a junior and I've done this tw...
+3   0.9178     housing_calder_annexe_laundry.txt Laundry in Calder Annexe  Machines take $2.00 wash, ...
+4   0.9466     course_cs_210_exams.txt          CS 210 Data Structures — assessment  Two midterms an...
+5   0.9666     course_cs_210.txt                CS 210 Data Structures  I'm a junior and I've done t...
+
+Gate: best distance 0.877 is over the 0.6 cutoff — refusing
+
+Lower is better. 0.3 is a close match, 0.9 is unrelated.
+Milestone 4: run your five questions, then the five in OUT_OF_SCOPE
+that your documents clearly don't cover, and look for the gap
+between the two groups. Your cutoff goes in that gap.
