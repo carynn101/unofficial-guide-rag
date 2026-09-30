@@ -314,23 +314,42 @@ source, unlike my unit 1 test answer that cited five.
 
 ## Diagnoses
 
-<!-- For each miss: which stage caused it, and how. The stage alone isn't
-     enough — you need the mechanism.
+**No criterion was missed.** The closest thing to a failure is Q1 on
+criterion 4, and it isn't a pipeline failure at all: no stage (loading,
+chunking, embedding, retrieval, generation) did anything wrong. The
+`expects` phrase I wrote in unit 1, `rollover`, is a word the corpus never
+uses; `admin_dining_dollars.txt` says "rolls over". The fault is in my
+test, not my system.
 
-     Not a diagnosis: "Question 3 didn't work."
-     A diagnosis:     "Question 3 asks about laundry costs. The answer is in
-                       one sentence that got split across two chunks, so
-                       neither chunk on its own contains it."
+**Were my targets set low? Yes, in three specific ways.**
 
-     The five stages: loading → chunking → embedding → retrieval → generation.
+- **Criterion 4 could barely fail.** Chunks are 800 characters and my
+  documents average about 317, so every document sits whole inside one
+  chunk. A split was structurally impossible; the only way to miss was a
+  wording mismatch, which is exactly what happened.
+- **Criterion 3's out-of-scope questions were too far away.** Mongolia, diesel
+  engines and Rust loops have nothing to do with campus life, so the gap
+  (0.803 at closest vs. a 0.6 cutoff) says little about how the gate handles
+  a *plausible* question my corpus doesn't cover.
+- **Criterion 1 cast a wide net.** With top-k 5 over a small corpus, "the
+  answer is somewhere in five chunks" is easy to clear. The laundry question
+  shows why that matters: it retrieved four *other* halls' laundry files plus
+  `dining_halden_hall.txt` alongside the right one. And because seven laundry
+  files contain the identical sentence ("Best time to do laundry here is
+  Tuesday or Wednesday morning"), that question couldn't catch a wrong-hall
+  retrieval even if one happened.
 
-     Look for a pattern. If three misses all ask about numbers, that's one
-     problem, not three.
+**Pattern:** all five test questions are single-fact lookups whose answer sits
+in one short document. None tests near-duplicate files with *different*
+answers, a campus-adjacent question the corpus doesn't cover, or an answer
+spread across two documents.
 
-     Missed nothing? Say so, then say honestly whether your targets were set
-     low, and which one you'd tighten and to what.
-
-     Milestone 3. -->
+**The one I'd tighten:** criterion 1, from "the answer is in the top 5" to
+"the top-ranked chunk comes from the correct file, for at least 4 of 5
+questions." One catch: `run_eval.py` line 126 builds the retrieved list with
+`sorted({r.source for r in results})`, which puts files in alphabetical
+order and throws away rank, so I'd need to log rank order before I could
+measure this.
 
 ## The Improvement
 
