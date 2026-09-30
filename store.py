@@ -181,11 +181,27 @@ def build_index(
 RRF_K = 60  # standard Reciprocal Rank Fusion constant
 
 
+# Stretch improvement: a standard list of English stopwords plus question
+# words. They carry no topic, but BM25 scores them like any other term.
+STOPWORDS = frozenset("""
+a about after all also am an and any are as at be because been before being
+but by can could did do does doing down during each for from had has have
+having he her here hers him his how i if in into is it its just me more most
+my no nor not of off on once only or other our out over own same she should
+so some such than that the their them then there these they this those
+through to too under until up very was we were what when where which while
+who whom why will with would you your
+""".split())
+
+
 def _tokenize(text: str) -> list[str]:
     """Lowercase words and numbers, for BM25 keyword matching."""
     import re
 
-    return re.findall(r"\w+", text.lower())
+    words = re.findall(r"\w+", text.lower())
+    if getattr(config, "BM25_STOPWORDS", False):
+        words = [w for w in words if w not in STOPWORDS]
+    return words
 
 
 def _hybrid_search(collection, question: str, top_k: int) -> list[Result]:

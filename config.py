@@ -111,3 +111,6 @@ def collection_name(name: str | None = None, variant: str = "default") -> str:
 
 # Unit 2 improvement: BM25 + semantic hybrid retrieval. False = unit 1 behaviour.
 HYBRID_SEARCH = True
+
+# Stretch improvement: drop stopwords before BM25 scoring. False = hybrid as in Milestone 4.
+BM25_STOPWORDS = True
