@@ -213,46 +213,104 @@ citation.
 
 ## Run Log — Before
 
-<!-- Your five criteria, three runs each. `python run_eval.py --label before`
-     runs the questions, puts the OUT_OF_SCOPE ones through the gate, and
-     writes it all into results/ for you. Targets come from criteria.md; the
-     verdict column is your call.
-
-     Criterion 3 is measured in one deterministic pass rather than three, so
-     the same number goes in all three run columns. That's correct, not lazy.
-
-     Milestone 1. -->
+Produced by `run_eval.py::main` → `results/run_2026-09-29_1935_before.md`.
+Retrieval via `store.py::search`, chunks from `chunker.py::split_documents`
+(fixed-size, 800 chars, 120 overlap). top-k 5, relevance cutoff 0.6,
+3 runs per question, caching off (15 model calls).
 
 | Criterion | Target | Run 1 | Run 2 | Run 3 | Verdict |
 |---|---|---|---|---|---|
-| 1. Retrieved chunk contains the answer | 4 of 5 |  |  |  |  |
-| 2. Every answer names a source | 5 of 5 |  |  |  |  |
-| 3. Gate stops out-of-corpus questions | 4 of 5 |  |  |  |  |
-| 4. | | | | | |
-| 5. | | | | | |
+| 1. Retrieved chunk contains the answer | 4 of 5 | 5/5 | 5/5 | 5/5 | MET |
+| 2. Every answer names a source | 5 of 5 | 5/5 | 5/5 | 5/5 | MET |
+| 3. Gate stops out-of-corpus questions | 4 of 5 | 5/5 | 5/5 | 5/5 | MET |
+| 4. Single chunk holds the full `expects` phrase | 4 of 5 | 4/5 | 4/5 | 4/5 | MET |
+| 5. Named source contains the claim | 4 of 5 | 5/5 | 5/5 | 5/5 | MET |
 
-<!-- Underneath, paste the REAL output for each criterion from one of your
-     runs — the actual text your system produced, not a description of it.
-     Name the file and function that produced it. -->
+Criteria 1, 3 and 4 depend only on retrieval, which is deterministic
+(identical distances and retrieved files on every run), so the same number
+appears in all three columns. Criteria 2 and 5 depend on the generated
+answer, which did vary in wording between runs but not in substance.
+
+### Real output (run 1)
+
+**Criterion 1** (`run_eval.py::main`, retrieval by `store.py::search`)
+How long is the walk from Fenwick Court to central campus?
+Best distance 0.2201 · Sources retrieved: dining_pellew_dining_hall_followup.txt,
+housing_fenwick_court.txt, housing_fenwick_court_noise.txt, transit_shuttle.txt,
+transit_walking.txt
+```
+The walk from Fenwick Court to central campus is 18 minutes (source: transit_walking.txt).
+```
+
+**Criterion 2** (`run_eval.py::main`)
+How long does a hold on a checked-out library book take to arrive?
+```
+A hold on a checked-out book usually arrives in two to three days (admin_library_holds.txt).
+```
+
+**Criterion 3** (`run_eval.py::check_out_of_scope`, cutoff 0.6)
+```
+refused  (best distance 0.825)  What is the capital of Mongolia?
+refused  (best distance 0.934)  How do I change the oil in a diesel engine?
+refused  (best distance 0.886)  Who won the 1994 World Cup?
+refused  (best distance 0.803)  What is the recommended dosage of ibuprofen for a headache?
+refused  (best distance 0.877)  How do I write a for loop in Rust?
+-> gate refused 5 of 5
+```
+
+**Criterion 4** (the one miss). `expects` for Q1 is `rollover`. The source
+file `admin_dining_dollars.txt` reads:
+```
+Declining balance — what everyone calls dining dollars — rolls over from the
+autumn semester to the spring, but not from spring to the following autumn.
+Whatever is left in May disappears.
+```
+System answer:
+```
+Based on the provided documents, dining dollars roll over from the autumn
+semester to the spring, but whatever is left in May disappears.
+Source: admin_dining_dollars.txt
+```
+
+**Criterion 5** (`run_eval.py::main`)
+What is the maximum number of hours students can work on campus during term?
+```
+The maximum number of hours students can work on campus during term is 20 hours a week (money_jobs.txt).
+```
+`money_jobs.txt` line 5: "Maximum is 20 hours a week during term."
 
 ## Verdicts
 
-<!-- MET or MISSED for each of the five, against the target you wrote last
-     unit — not a new one. Plus a sentence on how you decided. That sentence
-     matters most where it was close.
+**1. MET (5/5, 5/5, 5/5 vs. 4 of 5).** Every question's retrieved set included
+the file containing the answer. My stated risk (that `transit_walking.txt`
+holds four routes and the Fenwick question could pull the wrong one) did not
+happen: all three runs answered 18 minutes, which matches the Fenwick line.
 
-     If your target said 4 of 5 and your runs came out 4, 3, 4, that's a MISS.
-     The target has to hold, not show up occasionally.
+**2. MET (5/5 every run vs. 5 of 5).** All 15 answers named a file. The format
+varied between a `Source:` line and an inline `(filename.txt)`, but the
+criterion only requires that a source is named.
 
-     Milestone 2. -->
+**3. MET (5/5 vs. 4 of 5).** The closest out-of-scope question was 0.803
+against a 0.6 cutoff; the furthest in-scope question was 0.393. No question
+came near the line.
+
+**4. MET, but the miss is a measurement problem (4/5 vs. 4 of 5).** Q1's
+`expects` phrase, `rollover`, appears nowhere in the corpus; the file says
+"rolls over." The answer is not split. The whole policy is one paragraph
+inside one chunk. I chose a word the document doesn't use. This is exactly
+on target, so I read it plainly as MET rather than revising the criterion.
+
+**5. MET (5/5 every run vs. 4 of 5).** I checked each cited file with grep.
+Every claim appears in the file the answer named. Each answer named a single
+source, unlike my unit 1 test answer that cited five.
 
 | # | Criterion | Verdict | How I decided |
 |---|---|---|---|
-| 1 |  |  |  |
-| 2 |  |  |  |
-| 3 |  |  |  |
-| 4 |  |  |  |
-| 5 |  |  |  |
+| 1 | Retrieved chunk contains the answer | MET | 5/5 in all three runs vs. target 4 of 5; the answer's source file was in every retrieved set |
+| 2 | Every answer names a source | MET | 15 of 15 answers named a file vs. target 5 of 5 per run |
+| 3 | Gate stops out-of-corpus questions | MET | 5/5 refused vs. target 4 of 5; closest out-of-scope distance 0.803 against a 0.6 cutoff |
+| 4 | Single chunk holds the full `expects` phrase | MET | 4/5 in all three runs, exactly on target; the one miss is a word choice (`rollover` vs. "rolls over"), not a split |
+| 5 | Named source contains the claim | MET | 5/5 in all three runs vs. target 4 of 5; each claim confirmed in the cited file with grep |
 
 ## Diagnoses
 
