@@ -351,36 +351,130 @@ questions." One catch: `run_eval.py` line 126 builds the retrieved list with
 order and throws away rank, so I'd need to log rank order before I could
 measure this.
 
+> **Correction (added after the Milestone 4 run):** I wrote above that
+> "every document sits whole inside one chunk." That was too broad.
+> `results/retrieve_after.txt` shows two different chunks of
+> `housing_fenwick_court.txt` (one starting "Fenwick Court — what it's
+> actually like", one starting "The bad: the furthest housing…"), and
+> `course_hist_118.txt` also appears as two chunks, so longer documents do
+> split at 800 characters. The point about criterion 4 still holds for the
+> five documents my answers come from: all are under 800 characters
+> (`wc -c`), so none of them can split. The verdict doesn't change, but the
+> claim as I first wrote it was wrong.
+
 ## The Improvement
 
-**What I changed:**
+**What I changed:** Hybrid retrieval. `store.py::_hybrid_search` ranks every
+chunk twice, once by embedding distance (semantic) and once by BM25 keyword
+score (`rank-bm25`), then merges the two with Reciprocal Rank Fusion:
+`score = 1/(60 + semantic rank) + 1/(60 + keyword rank)`. The top 5 by fused
+score are returned. It sits behind `config.HYBRID_SEARCH`; setting it to
+`False` restores the unit 1 behaviour exactly. Nothing else in the pipeline
+changed: same corpus, same chunks (800/120), same index, same prompt, same
+top-k, same 0.6 cutoff.
 
-**Why I picked it:**
+**Why I picked it:** My diagnosis found that semantic search fills the top 5
+with near-miss files. The laundry question pulled four other halls' laundry
+files plus a dining review, and my questions name specific places ("Aldridge
+Hall", "Fenwick Court") that exact keyword matching should reward.
 
-<!-- Connect it to a specific diagnosis above in one sentence. If you can't,
-     you picked a fix because it sounded impressive. -->
+**What I predicted before running it:** `gate.py::check` uses
+`min(r.distance for r in results)`, and every result keeps its real cosine
+distance, so reordering alone can't move the gate. The only way the best
+distance can change is if the semantic #1 chunk is pushed out of the top 5,
+and then it can only go *up*. So hybrid search could make the gate stricter
+but never looser: criterion 3 was safe, and the one risk was an in-scope
+question losing its best chunk.
+
+To see rank order (the eval log sorts retrieved files alphabetically), I
+also saved `python app.py retrieve` output for all 10 questions before and
+after: `results/retrieve_before.txt` and `results/retrieve_after.txt`.
 
 ### Run Log — After
 
-<!-- Same format, same five criteria, three runs each.
-     `python run_eval.py --label after` -->
+Produced by `run_eval.py::main` → `results/run_2026-09-29_2029_after.md`,
+with `config.HYBRID_SEARCH = True`. 3 runs per question, caching off
+(15 model calls).
 
 | Criterion | Target | Run 1 | Run 2 | Run 3 | Verdict |
 |---|---|---|---|---|---|
-| 1. Retrieved chunk contains the answer | 4 of 5 |  |  |  |  |
-| 2. Every answer names a source | 5 of 5 |  |  |  |  |
-| 3. Gate stops out-of-corpus questions | 4 of 5 |  |  |  |  |
-| 4. | | | | | |
-| 5. | | | | | |
+| 1. Retrieved chunk contains the answer | 4 of 5 | 5/5 | 5/5 | 5/5 | MET |
+| 2. Every answer names a source | 5 of 5 | 5/5 | 5/5 | 5/5 | MET |
+| 3. Gate stops out-of-corpus questions | 4 of 5 | 5/5 | 5/5 | 5/5 | MET |
+| 4. Single chunk holds the full `expects` phrase | 4 of 5 | 4/5 | 4/5 | 4/5 | MET |
+| 5. Named source contains the claim | 4 of 5 | 5/5 | 5/5 | 5/5 | MET |
 
-**Did it help?**
+### Before vs. after, side by side
 
-<!-- Say plainly whether it did, and how you know. If it made things worse,
-     say that — a change that backfired, honestly reported, earns full credit
-     and is more interesting than one that worked. What matters is that you can
-     tell.
+| Criterion | Before (runs 1/2/3) | After (runs 1/2/3) | Change |
+|---|---|---|---|
+| 1 | 5/5, 5/5, 5/5 | 5/5, 5/5, 5/5 | none |
+| 2 | 5/5, 5/5, 5/5 | 5/5, 5/5, 5/5 | none |
+| 3 | 5/5 | 5/5 | none (Mongolia best distance 0.825 → 0.826) |
+| 4 | 4/5, 4/5, 4/5 | 4/5, 4/5, 4/5 | none (Q1 `rollover` still absent from corpus) |
+| 5 | 5/5, 5/5, 5/5 | 5/5, 5/5, 5/5 | none (Fenwick now cites two files; both contain the claim) |
 
-     Milestone 4. -->
+### Real output (after)
+
+**The gate prediction held.** All five in-scope best distances are identical
+to before (0.352, 0.302, 0.153, 0.393, 0.220). The only gate number that
+moved is Mongolia, because its semantic #1 was pushed out:
+```
+before  1   0.8246   course_hist_118_exams.txt    → gate 0.825, refused
+after   1   0.9259   housing_calder_annexe.txt
+        3   0.8259   course_hist_118.txt          → gate 0.826, refused
+```
+
+**Rank 1 never changed** for any in-scope question (`grep "^1 "` on both
+files): admin_dining_dollars, housing_aldridge_hall_laundry,
+admin_library_holds, money_jobs, transit_walking, before and after.
+
+**Where it helped: laundry** (rank 5):
+```
+before  5   0.5178   dining_halden_hall.txt
+after   5   0.5214   housing_morrow_house_laundry.txt
+```
+
+**Where it helped: Fenwick.** It pulled in a second, on-topic chunk that
+semantic search ranked too low to include:
+```
+after   3   0.6011   housing_fenwick_court.txt   "The bad: the furthest housing from central campus, about 18 minutes on foot."
+```
+The answers changed as a result, citing two sources instead of one and
+picking up the word "about" from the new chunk:
+```
+The walk from Fenwick Court to central campus takes about 18 minutes.
+
+Sources: `transit_walking.txt` and `housing_fenwick_court.txt`
+```
+Both files contain the claim (`housing_fenwick_court.txt` line 7), so
+criterion 5 still holds.
+
+**Where it hurt: library holds** (ranks 2–3):
+```
+before  2   0.5380   study_library_hours.txt
+        3   0.5686   money_textbooks.txt
+after   2   0.6269   transit_walking.txt
+        3   0.6041   dining_verrill_street_grill_followup.txt
+```
+`transit_walking.txt` has nothing to do with library holds. It matched on
+"How **long** … **take**" against its line "people **take** the **long** way
+round."
+
+**Where it hurt: dining dollars and work hours.** Dining dollars' ranks 3–5
+moved further away (0.60 → 0.67–0.77) and lost `admin_meal_plan_changes.txt`,
+which is at least on topic. Work hours swapped four course-workload files
+for different noise that matched on "hours" (`study_library_hours.txt`,
+`study_group_rooms.txt`, `course_math_220.txt`).
+
+**Did it help?** Not on my criteria: every verdict was MET before and after,
+and rank 1 never moved, so the numbers are identical. Below rank 1 the result
+was mixed, and the pattern is clear. It helped on questions with distinctive
+names (Aldridge, Fenwick) and hurt on questions whose keywords are common
+words ("how long", "take", "hours"). **Mechanism:** `store.py::_tokenize`
+keeps every word, including question words. In a small corpus of short
+posts, one common-word match gives a chunk a high BM25 rank, and RRF weights
+that keyword rank equally with meaning.
 
 ## What's Still Broken
 
